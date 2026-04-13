@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario de Cierre 2026 — Montachem</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;padding:1.5rem;}
+.wrap{max-width:960px;margin:0 auto;background:#fff;border-radius:12px;padding:1.5rem;border:0.5px solid #ddd;}
+.page-title{text-align:center;margin-bottom:1.25rem;}
+.page-title h1{font-size:18px;font-weight:700;color:#1F4E79;}
+.page-title p{font-size:12px;color:#888;margin-top:3px;}
+.top-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1rem;}
+.nav-btn{font-size:13px;padding:4px 14px;border:1px solid #ccc;border-radius:20px;cursor:pointer;background:#fff;color:#555;}
+.nav-btn:hover{background:#f0f0f0;}
+.month-label{font-size:17px;font-weight:600;color:#1a1a1a;flex:1;text-align:center;}
+.stats-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem;}
+.stat{background:#f3f3f3;border-radius:8px;padding:6px 12px;font-size:11px;color:#666;display:flex;align-items:center;gap:6px;}
+.stat b{font-size:15px;font-weight:600;color:#222;}
+.prog-bar{height:4px;background:#e0e0e0;border-radius:2px;margin-bottom:1rem;overflow:hidden;}
+.prog-fill{height:100%;background:#639922;border-radius:2px;transition:width .3s;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;}
+.dlbl{font-size:10px;font-weight:600;color:#888;text-align:center;padding:3px 0;}
+.cell{min-height:90px;background:#fff;border:0.5px solid #e0e0e0;border-radius:6px;padding:3px;}
+.cell.empty{background:transparent;border-color:transparent;}
+.cell.we{background:#f7f7f7;opacity:.6;}
+.cell.today-cell{border:1.5px solid #378ADD;}
+.dnum{font-size:10px;font-weight:600;color:#999;text-align:right;margin-bottom:2px;}
+.cell.today-cell .dnum{color:#185FA5;}
+.ev{font-size:8.5px;border-radius:3px;padding:2px 3px;margin-bottom:2px;line-height:1.3;cursor:pointer;border-left:2px solid transparent;}
+.ev-blue  {background:#E6F1FB;color:#0C447C;border-color:#185FA5;}
+.ev-amber {background:#FAEEDA;color:#633806;border-color:#BA7517;}
+.ev-teal  {background:#E1F5EE;color:#085041;border-color:#0F6E56;}
+.ev-purple{background:#EEEDFE;color:#3C3489;border-color:#534AB7;}
+.ev-coral {background:#FAECE7;color:#712B13;border-color:#993C1D;}
+.ev-dead  {background:#FCEBEB;color:#791F1F;border-left:3px solid #E24B4A;font-weight:600;}
+.st-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:2px;vertical-align:middle;flex-shrink:0;}
+.st-pend{background:#888780;}.st-prog{background:#EF9F27;}.st-done{background:#639922;}.st-block{background:#E24B4A;}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:1rem;padding-top:.75rem;border-top:0.5px solid #e0e0e0;}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#666;}
+.leg-box{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.panel{display:none;background:#fff;border:0.5px solid #ccc;border-radius:10px;padding:14px;margin-top:1rem;}
+.panel.open{display:block;}
+.panel-title{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:10px;}
+.panel-close{float:right;cursor:pointer;color:#999;font-size:14px;background:none;border:none;padding:0;}
+.tab-bar{display:flex;gap:6px;margin-bottom:10px;}
+.tab-btn{font-size:11px;padding:4px 12px;border:1px solid #ccc;border-radius:20px;cursor:pointer;background:#fff;color:#555;}
+.tab-btn.active{background:#185FA5;color:#fff;border-color:#185FA5;}
+.tab-content{display:none;}.tab-content.active{display:block;}
+.panel-row{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:6px;padding:7px 0;border-bottom:0.5px solid #eee;}
+.panel-row:last-child{border-bottom:none;}
+.panel-act{font-size:12px;color:#222;}
+.panel-resp{font-size:10px;color:#666;background:#f3f3f3;border-radius:20px;padding:2px 7px;white-space:nowrap;}
+.st-sel{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid #ccc;cursor:pointer;background:#fff;color:#555;white-space:nowrap;}
+.st-sel.s-pend{background:#F1EFE8;color:#5F5E5A;border-color:#B4B2A9;}
+.st-sel.s-prog{background:#FAEEDA;color:#854F0B;border-color:#EF9F27;}
+.st-sel.s-done{background:#EAF3DE;color:#3B6D11;border-color:#97C459;}
+.st-sel.s-block{background:#FCEBEB;color:#A32D2D;border-color:#F09595;}
+.field-wrap{display:flex;flex-direction:column;gap:2px;align-items:flex-start;}
+.field-lbl{font-size:9px;color:#888;}
+.field-wrap input[type=date]{font-size:10px;border:1px solid #ccc;border-radius:4px;padding:2px 4px;background:#fff;color:#222;cursor:pointer;width:110px;}
+.field-wrap input[type=date]:disabled{opacity:0.35;cursor:default;}
+.edit-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid #eee;}
+.edit-row:last-child{border-bottom:none;}
+.edit-act{font-size:11px;color:#222;}
+.day-select{font-size:11px;border:1px solid #ccc;border-radius:4px;padding:3px 6px;background:#fff;color:#222;cursor:pointer;min-width:130px;}
+.day-select.modified{border-color:#BA7517;color:#633806;}
+.reset-btn{font-size:9px;padding:2px 7px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:#fff;color:#555;}
+.reset-btn:hover{background:#f0f0f0;}
+.reset-all-btn{font-size:11px;padding:4px 12px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:#fff;color:#555;margin-top:10px;}
+.reset-all-btn:hover{background:#f0f0f0;}
+.habil-note{font-size:10px;color:#888;margin-bottom:10px;padding:6px 10px;background:#f3f3f3;border-radius:6px;}
+
+/* ── DASHBOARD ── */
+.dash{background:#fff;border:0.5px solid #ddd;border-radius:10px;padding:14px 16px;margin-bottom:1rem;}
+.dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.dash-title{font-size:13px;font-weight:700;color:#1F4E79;}
+.dash-toggle{font-size:11px;padding:3px 10px;border:1px solid #ccc;border-radius:20px;cursor:pointer;background:#fff;color:#555;}
+.dash-toggle:hover{background:#f0f0f0;}
+.dash-body{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.dash-section{background:#f8f8f8;border-radius:8px;padding:10px 12px;}
+.dash-sec-title{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.kpi-row{display:flex;gap:8px;flex-wrap:wrap;}
+.kpi{background:#fff;border-radius:6px;padding:7px 10px;flex:1;min-width:60px;border:0.5px solid #e8e8e8;text-align:center;}
+.kpi-val{font-size:20px;font-weight:700;color:#222;line-height:1;}
+.kpi-lbl{font-size:9px;color:#888;margin-top:3px;}
+.timing-bars{display:flex;flex-direction:column;gap:5px;}
+.tbar-row{display:flex;align-items:center;gap:6px;}
+.tbar-lbl{font-size:10px;color:#555;width:72px;flex-shrink:0;}
+.tbar-track{flex:1;height:8px;background:#e8e8e8;border-radius:4px;overflow:hidden;}
+.tbar-fill{height:100%;border-radius:4px;transition:width .3s;}
+.tbar-count{font-size:10px;color:#555;width:20px;text-align:right;flex-shrink:0;}
+.resp-grid{display:flex;flex-direction:column;gap:4px;}
+.resp-row{display:flex;align-items:center;gap:6px;}
+.resp-badge{font-size:9px;font-weight:700;background:#E6F1FB;color:#0C447C;border-radius:10px;padding:2px 7px;min-width:40px;text-align:center;flex-shrink:0;}
+.resp-bar-track{flex:1;height:6px;background:#e8e8e8;border-radius:3px;overflow:hidden;}
+.resp-bar-fill{height:100%;border-radius:3px;transition:width .3s;}
+.resp-pct{font-size:9px;color:#888;width:28px;text-align:right;flex-shrink:0;}
+.dash-collapsed .dash-body{display:none;}
+.dash-pct-ring{position:relative;display:inline-flex;align-items:center;justify-content:center;}
+.ring-wrap{display:flex;justify-content:center;align-items:center;margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-title">
+    <h1>Calendario de Cierre Mensual 2026</h1>
+    <p>P&amp;L por región — entrega máxima día 20 de cada mes</p>
+  </div>
+  <!-- DASHBOARD -->
+  <div class="dash" id="dashboard">
+    <div class="dash-header">
+      <span class="dash-title" id="dash-month-title">Dashboard — </span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="save-indicator" style="font-size:10px;color:#639922;display:none;">&#10003; Guardado</span>
+        <button class="dash-toggle" id="clear-data" style="color:#E24B4A;border-color:#F09595;">&#128465; Borrar datos</button>
+        <button class="dash-toggle" id="dash-toggle">&#9650; Ocultar</button>
+      </div>
+    </div>
+    <div class="dash-body" id="dash-body">
+      <div class="dash-section">
+        <div class="dash-sec-title">Avance del mes</div>
+        <div class="kpi-row" id="dash-avance"></div>
+      </div>
+      <div class="dash-section">
+        <div class="dash-sec-title">Puntualidad</div>
+        <div class="timing-bars" id="dash-timing"></div>
+      </div>
+      <div class="dash-section">
+        <div class="dash-sec-title">Por responsable</div>
+        <div class="resp-grid" id="dash-resp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="top-bar">
+    <button class="nav-btn" id="prev">&#8592;</button>
+    <span class="month-label" id="mlabel"></span>
+    <button class="nav-btn" id="next">&#8594;</button>
+  </div>
+  <div class="stats-row" id="statsrow"></div>
+  <div class="prog-bar"><div class="prog-fill" id="progfill"></div></div>
+  <div class="cal-grid" id="calgrid"></div>
+  <div class="legend">
+    <div class="leg"><div class="leg-box" style="background:#E6F1FB;border-left:2px solid #185FA5;"></div>Nómina/Rec.</div>
+    <div class="leg"><div class="leg-box" style="background:#FAEEDA;border-left:2px solid #BA7517;"></div>Costos</div>
+    <div class="leg"><div class="leg-box" style="background:#E1F5EE;border-left:2px solid #0F6E56;"></div>Comisiones</div>
+    <div class="leg"><div class="leg-box" style="background:#EEEDFE;border-left:2px solid #534AB7;"></div>Reclasif./IC</div>
+    <div class="leg"><div class="leg-box" style="background:#FAECE7;border-left:2px solid #993C1D;"></div>Reportes/S&amp;OP</div>
+    <div class="leg"><div class="leg-box" style="background:#FCEBEB;border-left:3px solid #E24B4A;"></div>Entrega P&amp;L</div>
+    <div class="leg"><span class="st-dot st-pend"></span>Pendiente</div>
+    <div class="leg"><span class="st-dot st-prog"></span>En progreso</div>
+    <div class="leg"><span class="st-dot st-done"></span>Completado</div>
+    <div class="leg"><span class="st-dot st-block"></span>Bloqueado</div>
+  </div>
+  <div class="panel" id="panel">
+    <button class="panel-close" id="panelclose">&#10005;</button>
+    <div class="panel-title" id="panel-title"></div>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="actividades">Actividades del día</button>
+      <button class="tab-btn" data-tab="editar">Editar fechas del mes</button>
+    </div>
+    <div class="tab-content active" id="tab-actividades"><div id="panel-body"></div></div>
+    <div class="tab-content" id="tab-editar">
+      <div class="habil-note">Solo se muestran días hábiles (lunes a viernes). Los cambios aplican únicamente al mes actual.</div>
+      <div id="edit-body"></div>
+      <button class="reset-all-btn" id="reset-month">&#8635; Restaurar días originales del mes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DNAMES=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const STATUSES=[
+  {key:'pend',label:'Pendiente',cls:'s-pend',dot:'st-pend'},
+  {key:'prog',label:'En progreso',cls:'s-prog',dot:'st-prog'},
+  {key:'done',label:'Completado',cls:'s-done',dot:'st-done'},
+  {key:'block',label:'Bloqueado',cls:'s-block',dot:'st-block'},
+];
+const BASE=[
+  {d:4, label:'Payroll MISA + Reconciliation',       resp:'DP/MM', col:'ev-blue',   isD:false},
+  {d:7, label:'Costos MCC — accrual & posting',      resp:'SM/TC', col:'ev-amber',  isD:false},
+  {d:7, label:'Costos MII — accrual & posting',      resp:'SM/TC', col:'ev-amber',  isD:false},
+  {d:7, label:'Costos MIIBV — accrual & posting',    resp:'SM/TC', col:'ev-amber',  isD:false},
+  {d:7, label:'Costos MIIUK — accrual & posting',    resp:'SM/TC', col:'ev-amber',  isD:false},
+  {d:7, label:'Costos NAPTHEC — accrual & posting',  resp:'SM/TC', col:'ev-amber',  isD:false},
+  {d:7, label:'Costos MULLC — accrual & posting',    resp:'SM/TC', col:'ev-amber',  isD:false},
+  {d:7, label:'Costos MOMEX — accrual & posting',    resp:'SM/TC', col:'ev-amber',  isD:false},
+  {d:8, label:'Purchase commissions accrual',        resp:'DP/SM', col:'ev-teal',   isD:false},
+  {d:9, label:'MULLC Reclasif. cost & insurance IC', resp:'DP/FP', col:'ev-purple', isD:false},
+  {d:11,label:'Settlement & payment sales comm.',    resp:'DP/SM', col:'ev-teal',   isD:false},
+  {d:13,label:'Final Profitability Report',          resp:'SM/TC', col:'ev-coral',  isD:false},
+  {d:14,label:'Recon. costos MII-MCC-MIUK-MIBV',    resp:'TC',    col:'ev-amber',  isD:false},
+  {d:15,label:'S&OP Requirements for MPS Tool',     resp:'LG/DP', col:'ev-coral',  isD:false},
+  {d:20,label:'ENTREGA P&L por región',              resp:'DP',    col:'ev-dead',   isD:true},
+  {d:29,label:'Management Presentation',             resp:'DP/SM', col:'ev-coral',  isD:false},
+];
+
+// ── localStorage helpers ──
+const LS_KEY='montachem_cierre_2026';
+function saveLS(){
+  try{
+    localStorage.setItem(LS_KEY,JSON.stringify({state,customDays}));
+    const ind=document.getElementById('save-indicator');
+    if(ind){ind.style.display='inline';clearTimeout(ind._t);ind._t=setTimeout(()=>ind.style.display='none',1800);}
+  }catch(e){}
+}
+function loadLS(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(!raw)return false;
+    const obj=JSON.parse(raw);
+    if(obj.state)Object.assign(state,obj.state);
+    if(obj.customDays)Object.assign(customDays,obj.customDays);
+    return true;
+  }catch(e){return false;}
+}
+
+const state={};const customDays={};
+for(let m=0;m<12;m++){state[m]=BASE.map(()=>({status:'pend',completedDate:''}));customDays[m]=BASE.map(()=>null);}
+loadLS();
+
+function daysIn(m){return new Date(2026,m+1,0).getDate();}
+function firstDow(m){let d=new Date(2026,m,1).getDay();return d===0?6:d-1;}
+function isWeekend(m,d){const dw=new Date(2026,m,d).getDay();return dw===0||dw===6;}
+function workingDays(m){const days=[];for(let d=1;d<=daysIn(m);d++)if(!isWeekend(m,d))days.push(d);return days;}
+function getDay(m,i){
+  if(customDays[m][i]!==null)return customDays[m][i];
+  const max=daysIn(m);let d=Math.min(BASE[i].d,max);
+  while(d<=max&&isWeekend(m,d))d++;
+  if(d>max){d=max;while(d>0&&isWeekend(m,d))d--;}
+  return d;
+}
+function fmtDate(str){if(!str)return '';const[y,mo,d]=str.split('-');return`${d}/${mo}/${y}`;}
+function dowName(m,d){return['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][new Date(2026,m,d).getDay()];}
+
+let cur=new Date().getMonth(),openPanelDay=null,activeTab='actividades';
+
+function render(){
+  const m=cur;
+  document.getElementById('mlabel').textContent=MONTHS[m]+' 2026';
+  const grid=document.getElementById('calgrid');grid.innerHTML='';
+  DNAMES.forEach(n=>{const d=document.createElement('div');d.className='dlbl';d.textContent=n;grid.appendChild(d);});
+  const total=daysIn(m),offset=firstDow(m),today=new Date(),evMap={};
+  BASE.forEach((_,i)=>{const ad=getDay(m,i);if(!evMap[ad])evMap[ad]=[];evMap[ad].push({...BASE[i],idx:i,adj:ad});});
+  for(let i=0;i<offset;i++){const e=document.createElement('div');e.className='cell empty';grid.appendChild(e);}
+  for(let d=1;d<=total;d++){
+    const cell=document.createElement('div');
+    const we=isWeekend(m,d);
+    cell.className='cell'+(we?' we':'');
+    if(today.getFullYear()===2026&&today.getMonth()===m&&today.getDate()===d)cell.classList.add('today-cell');
+    const dn=document.createElement('div');dn.className='dnum';dn.textContent=d;cell.appendChild(dn);
+    if(evMap[d]){
+      evMap[d].slice(0,3).forEach(ev=>{
+        const tag=document.createElement('div');tag.className='ev '+ev.col;
+        const dotcls=STATUSES.find(s=>s.key===state[m][ev.idx].status).dot;
+        const cd=state[m][ev.idx].completedDate;
+        const cdStr=cd?` <span style="font-size:7.5px;opacity:.8;">${fmtDate(cd)}</span>`:'';
+        const cm=customDays[m][ev.idx]!==null?'<span style="font-size:7px;opacity:.7;"> *</span>':'';
+        tag.innerHTML=`<span class="st-dot ${dotcls}"></span>${ev.label}${cm}${cdStr}`;
+        tag.addEventListener('click',()=>{openPanelDay=d;openPanel(m,d,evMap[d]);});
+        cell.appendChild(tag);
+      });
+      if(evMap[d].length>3){
+        const more=document.createElement('div');more.style.cssText='font-size:8px;color:#999;padding:1px 3px;cursor:pointer;';
+        more.textContent=`+${evMap[d].length-3} más`;
+        more.addEventListener('click',()=>{openPanelDay=d;openPanel(m,d,evMap[d]);});
+        cell.appendChild(more);
+      }
+    }
+    grid.appendChild(cell);
+  }
+  updateStats(m);
+  if(openPanelDay!==null&&document.getElementById('panel').classList.contains('open')){
+    const rebuildEvs=[];
+    BASE.forEach((_,i)=>{if(getDay(m,i)===openPanelDay)rebuildEvs.push({...BASE[i],idx:i,adj:openPanelDay});});
+    if(rebuildEvs.length>0)openPanel(m,openPanelDay,rebuildEvs);
+  }
+}
+
+function openPanel(m,d,evs){
+  openPanelDay=d;
+  document.getElementById('panel-title').textContent=`${dowName(m,d)} ${d} de ${MONTHS[m]}`;
+  renderActividades(m,evs);renderEditTab(m);
+  document.getElementById('panel').classList.add('open');
+  setTab(activeTab);
+}
+
+function renderActividades(m,evs){
+  const body=document.getElementById('panel-body');body.innerHTML='';
+  evs.forEach(ev=>{
+    const rec=state[m][ev.idx];const stObj=STATUSES.find(s=>s.key===rec.status);const isDone=rec.status==='done';
+    const isCustom=customDays[m][ev.idx]!==null;
+    const row=document.createElement('div');row.className='panel-row';
+    const actDiv=document.createElement('div');actDiv.className='panel-act';
+    actDiv.innerHTML=ev.label+(isCustom?` <span style="font-size:9px;color:#888;">(día editado)</span>`:'');
+    const respSpan=document.createElement('span');respSpan.className='panel-resp';respSpan.textContent=ev.resp;
+    const sel=document.createElement('button');sel.className=`st-sel ${stObj.cls}`;sel.textContent=stObj.label;
+    sel.addEventListener('click',()=>{
+      const keys=STATUSES.map(s=>s.key);
+      const nk=keys[(keys.indexOf(state[m][ev.idx].status)+1)%keys.length];
+      state[m][ev.idx].status=nk;
+      if(nk==='done'&&!state[m][ev.idx].completedDate)state[m][ev.idx].completedDate=new Date().toISOString().split('T')[0];
+      if(nk!=='done')state[m][ev.idx].completedDate='';
+      saveLS();render();
+    });
+    const doneWrap=document.createElement('div');doneWrap.className='field-wrap';
+    const doneLbl=document.createElement('span');doneLbl.className='field-lbl';doneLbl.textContent='Completado:';
+    const doneInp=document.createElement('input');doneInp.type='date';doneInp.value=rec.completedDate||'';doneInp.disabled=!isDone;
+    doneInp.addEventListener('change',e=>{state[m][ev.idx].completedDate=e.target.value;saveLS();render();});
+    doneWrap.appendChild(doneLbl);doneWrap.appendChild(doneInp);
+    row.appendChild(actDiv);row.appendChild(respSpan);row.appendChild(sel);row.appendChild(doneWrap);
+    body.appendChild(row);
+  });
+}
+
+function renderEditTab(m){
+  const body=document.getElementById('edit-body');body.innerHTML='';
+  const wdays=workingDays(m);
+  BASE.forEach((act,i)=>{
+    const currentDay=getDay(m,i);const isCustom=customDays[m][i]!==null;
+    const row=document.createElement('div');row.className='edit-row';
+    const actDiv=document.createElement('div');actDiv.className='edit-act';actDiv.textContent=act.label;
+    const selWrap=document.createElement('div');selWrap.className='field-wrap';
+    const selLbl=document.createElement('span');selLbl.className='field-lbl';selLbl.textContent=`Día hábil (orig: ${act.d}):`;
+    const sel=document.createElement('select');sel.className='day-select'+(isCustom?' modified':'');
+    wdays.forEach(wd=>{
+      const opt=document.createElement('option');opt.value=wd;
+      opt.textContent=`${wd} — ${dowName(m,wd)}`;
+      if(wd===currentDay)opt.selected=true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change',()=>{
+      const v=parseInt(sel.value);
+      const defDay=getDay(m,i);
+      customDays[m][i]=(v===defDay&&!isCustom)?null:v;
+      sel.className='day-select'+(customDays[m][i]!==null?' modified':'');
+      saveLS();render();
+    });
+    selWrap.appendChild(selLbl);selWrap.appendChild(sel);
+    const resetBtn=document.createElement('button');resetBtn.className='reset-btn';resetBtn.textContent='↺';
+    resetBtn.title='Restaurar día original';resetBtn.style.visibility=isCustom?'visible':'hidden';
+    resetBtn.addEventListener('click',()=>{customDays[m][i]=null;saveLS();renderEditTab(m);render();});
+    row.appendChild(actDiv);row.appendChild(selWrap);row.appendChild(resetBtn);
+    body.appendChild(row);
+  });
+}
+
+function setTab(tab){
+  activeTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+tab));
+}
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+document.getElementById('reset-month').addEventListener('click',()=>{customDays[cur]=BASE.map(()=>null);saveLS();renderEditTab(cur);render();});
+document.getElementById('prev').addEventListener('click',()=>{cur=(cur+11)%12;openPanelDay=null;document.getElementById('panel').classList.remove('open');render();});
+document.getElementById('next').addEventListener('click',()=>{cur=(cur+1)%12;openPanelDay=null;document.getElementById('panel').classList.remove('open');render();});
+document.getElementById('panelclose').addEventListener('click',()=>{openPanelDay=null;document.getElementById('panel').classList.remove('open');});
+
+function updateStats(m){
+  const c={pend:0,prog:0,done:0,block:0};state[m].forEach(r=>c[r.status]++);
+  const pct=Math.round((c.done/BASE.length)*100);
+  document.getElementById('progfill').style.width=pct+'%';
+  let onTime=0,late=0,early=0;
+  state[m].forEach((r,i)=>{
+    if(r.status==='done'&&r.completedDate){
+      const sched=getDay(m,i);
+      const compD=parseInt(r.completedDate.split('-')[2]);
+      if(compD===sched)onTime++;
+      else if(compD>sched)late++;
+      else early++;
+    }
+  });
+  document.getElementById('statsrow').innerHTML=`
+    <div class="stat"><b>${BASE.length}</b> Total</div>
+    <div class="stat"><b style="color:#3B6D11">${c.done}</b> Completado</div>
+    <div class="stat"><b style="color:#854F0B">${c.prog}</b> En progreso</div>
+    <div class="stat"><b style="color:#5F5E5A">${c.pend}</b> Pendiente</div>
+    <div class="stat"><b style="color:#A32D2D">${c.block}</b> Bloqueado</div>
+    <div class="stat"><b>${pct}%</b> Avance</div>
+    <div class="stat"><b style="color:#639922">${onTime}</b> A tiempo</div>
+    <div class="stat"><b style="color:#E24B4A">${late}</b> Tarde</div>
+    <div class="stat"><b style="color:#534AB7">${early}</b> Anticipado</div>`;
+  updateDashboard(m,c,pct,onTime,late,early);
+}
+
+function updateDashboard(m,c,pct,onTime,late,early){
+  document.getElementById('dash-month-title').textContent='Dashboard — '+MONTHS[m]+' 2026';
+  const total=BASE.length;
+  document.getElementById('dash-avance').innerHTML=`
+    <div class="kpi"><div class="kpi-val" style="color:#185FA5">${pct}%</div><div class="kpi-lbl">Avance</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#3B6D11">${c.done}</div><div class="kpi-lbl">Completado</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#854F0B">${c.prog}</div><div class="kpi-lbl">En progreso</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#5F5E5A">${c.pend}</div><div class="kpi-lbl">Pendiente</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:#A32D2D">${c.block}</div><div class="kpi-lbl">Bloqueado</div></div>`;
+  const completed=c.done||1;
+  const timingData=[
+    {lbl:'A tiempo', val:onTime, color:'#639922'},
+    {lbl:'Tarde',    val:late,   color:'#E24B4A'},
+    {lbl:'Anticipado',val:early, color:'#534AB7'},
+  ];
+  document.getElementById('dash-timing').innerHTML=timingData.map(t=>`
+    <div class="tbar-row">
+      <span class="tbar-lbl">${t.lbl}</span>
+      <div class="tbar-track"><div class="tbar-fill" style="width:${c.done?Math.round(t.val/completed*100):0}%;background:${t.color};"></div></div>
+      <span class="tbar-count">${t.val}</span>
+    </div>`).join('')+`
+    <div style="margin-top:6px;font-size:9px;color:#aaa;">${c.done} actividad(es) completada(s) evaluadas</div>`;
+  const respMap={};
+  BASE.forEach((act,i)=>{
+    act.resp.split('/').forEach(r=>{
+      const rr=r.trim();
+      if(!respMap[rr])respMap[rr]={total:0,done:0};
+      respMap[rr].total++;
+      if(state[m][i].status==='done')respMap[rr].done++;
+    });
+  });
+  const colors=['#185FA5','#639922','#BA7517','#0F6E56','#534AB7','#993C1D'];
+  const respKeys=Object.keys(respMap).sort();
+  document.getElementById('dash-resp').innerHTML=respKeys.map((r,ci)=>{
+    const d=respMap[r];const p=d.total?Math.round(d.done/d.total*100):0;
+    const col=colors[ci%colors.length];
+    return`<div class="resp-row">
+      <span class="resp-badge" style="background:${col}22;color:${col}">${r}</span>
+      <div class="resp-bar-track"><div class="resp-bar-fill" style="width:${p}%;background:${col};"></div></div>
+      <span class="resp-pct">${d.done}/${d.total}</span>
+    </div>`;
+  }).join('');
+}
+
+// Clear all saved data
+document.getElementById('clear-data').addEventListener('click',()=>{
+  if(confirm('¿Borrar todos los estados y fechas guardadas? Esta acción no se puede deshacer.')){
+    localStorage.removeItem(LS_KEY);
+    for(let m=0;m<12;m++){
+      state[m]=BASE.map(()=>({status:'pend',completedDate:''}));
+      customDays[m]=BASE.map(()=>null);
+    }
+    render();
+  }
+});
+let dashVisible=true;
+document.getElementById('dash-toggle').addEventListener('click',()=>{
+  dashVisible=!dashVisible;
+  document.getElementById('dashboard').classList.toggle('dash-collapsed',!dashVisible);
+  document.getElementById('dash-toggle').innerHTML=dashVisible?'&#9650; Ocultar':'&#9660; Ver dashboard';
+});
+
+render();
+</script>
+</body>
+</html>
